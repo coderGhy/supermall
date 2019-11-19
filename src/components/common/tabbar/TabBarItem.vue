@@ -45,8 +45,9 @@ export default {
   .tab-bar-items img{
     width: 24px;
     height: 24px;
-    margin-top: 5px;
-    margin-bottom: 1px;
+    margin-top: 3px;
+    vertical-align: middle;
+    margin-bottom: 2px;
   }
   .active{
     color: red
