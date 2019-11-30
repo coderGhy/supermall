@@ -1,6 +1,6 @@
 <template>
-  <div class="goods-list-item">
-    <img :src="item.show.img" alt="">
+  <div class="goods-list-item" @click="itemclick">
+    <img :src="showImage" alt="" @load="itemImageLoad">
     <div class="goods-info">
       <p class="item-title">{{item.title}}</p>
       <span class="price">{{item.price}}</span>
@@ -19,6 +19,34 @@
                     return {}
                 }
             }
+        },
+        computed: {
+            showImage() {
+                return this.item.image || this.item.show.img
+                // return this.item.show.img || this.item.image
+
+            }
+        },
+        methods:{
+            itemImageLoad() {
+                //方法一 ，定义两个自定义事件，分别刷新，通过路由地址判断
+                // if(this.$route.path.indexOf('/home') !== -1){
+                //     this.$bus.$emit('homeImageLoad')
+                //
+                // }else if(this.$route.path.indexOf('/detail') !== -1){
+                //     this.$bus.$emit('detailImageLoad')
+                //
+                // }
+                //方法二，通过离开路由进行取消事件
+              this.$bus.$emit('itemImageLoad')
+                // console.log(this.item.iid);
+            },
+            itemclick() {
+              this.$router.push('/detail/' + this.item.iid)
+            }
+        },
+        mounted() {
+
         }
     }
 </script>

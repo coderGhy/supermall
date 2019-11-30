@@ -1,6 +1,5 @@
 <template>
     <div class="wrapper" ref="wrapper">
-
       <div class="content">
         <slot></slot>
       </div>
@@ -19,7 +18,7 @@
             pullUpLoad: {
                 type: Boolean,
                 default: false
-            }
+            },
         },
         data() {
             return {
@@ -31,26 +30,33 @@
                 probeType: this.scroll,
                 click: true,
                 pullUpLoad: this.pullUpLoad,
-                pullDownRefresh: true
 
             });
-            this.bscroll.on('scroll',(position)=>{
-                // console.log(position);
-                this.$emit('scroll',position)
-            });
-            this.bscroll.on('pullingUp',()=>{
-                // console.log("上拉加载内容")
-                // console.log(this.bscroll.finishPullUp)
-                this.$emit('pullingUp')
-            })
+            if(this.scroll == 3 || this.scroll == 2){
+                this.bscroll.on('scroll',(position)=>{
+                     this.$emit('scroll',position)
+                });
+            }
+            if(this.pullUpLoad){
+                this.bscroll.on('pullingUp',()=>{
+                    this.$emit('pullingUp')
+                })
+            }
+
         },
         methods: {
-            scrollTo(x, y, time = 300) {
-                this.bscroll.scrollTo(x,y,time)
+            scrollTo(x,y, time = 300) {
+                this.scroll && this.bscroll.scrollTo(x,y,time)
+
+            },
+            refresh() {
+                this.scroll && this.bscroll.refresh()   //重新判断滑动高度
             },
             finishPullUp() {
-                this.bscroll.finishPullUp()
-                // console.log("成功")
+                this.scroll && this.bscroll.finishPullUp() //重置滑动动作
+            },
+            getScrollY() {
+                return this.bscroll? this.bscroll.y:0
             }
         }
     }

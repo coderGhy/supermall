@@ -1,11 +1,16 @@
 <template>
     <div id="home">
       <nav-bar class="home-nav"><div slot="center">购物街</div></nav-bar>
-      <scroll class="center" ref="scroll" @scroll="scroll" :scroll="3" :pull-up-load="true" @pullingUp="loadMore">
-        <home-swiper :banners="banners"></home-swiper>
+      <tab-control :titles="['流行', '新款', '精选']" ref="tabcontrol1"
+                   class="tabControl"
+                   @tabClick="tabClick"
+                   v-show="this.tabControlShow"></tab-control>
+
+      <scroll class="center" ref="scroll" @scroll="scroll" :scroll="3" :pull-up-load="true" @pullingUp="loadMore" >
+        <home-swiper :banners="banners" @SwiperImageLoad="SwiperImageLoad"></home-swiper>
         <recommend-view :recommends="recommends"></recommend-view>
         <feature-view></feature-view>
-        <tab-control :titles="['流行', '新款', '精选']" class="tab-control" @tabClick="tabClick"></tab-control>
+        <tab-control :titles="['流行', '新款', '精选']" ref="tabcontrol2" @tabClick="tabClick"></tab-control>
         <goods-list :goods="showGoods"></goods-list>
       </scroll>
       <back-top @click.native="$refs.scroll.scrollTo(0,0,500)" v-show="isShow"></back-top>
@@ -24,8 +29,7 @@
   import NavBar from "components/common/navbar/NavBar";
   import Scroll from "components/common/scroll/Scroll";
 
-
-
+  import {itemListenerMixin} from "common/mixin";
   import {getHomeMultidata,getHomeGoods} from "network/home";
   export default {
       data() {
@@ -48,10 +52,13 @@
 
             },
             currentType: 'pop',
-            isShow: false
+            isShow: false,
+            tabControl: 0,
+            tabControlShow: null,
+            saveY: 0,
         }
       },
-    components: {
+      components: {
         TabControl,
         HomeSwiper,
         RecommendView,
@@ -63,15 +70,41 @@
         BackTop,
 
     },
-    created() {
+      /*
+      * 切换views保持位置
+      * 可能有的butter-scroll不好用
+      * 使用路由回调函数进行设置
+      * */
+      destroyed() {
+          console.log('home destroyed');
+
+      },
+      mixins:[itemListenerMixin],
+      activated() {
+
+          /*
+          * 因为轮播图的问题 具体问题不知道
+          * */
+          this.$refs.scroll.refresh()  //进行重新计算页面滑动高度 减少误差
+
+          this.$refs.scroll.scrollTo(0, this.saveY,0)
+
+      },
+      deactivated() {
+        // this.saveY = this.$refs.scroll.bscroll.y
+          this.saveY = this.$refs.scroll.getScrollY()
+          this.$bus.$off('itemImageLoad',this.itemImageLoad)
+      },
+
+      /*----------------------------------------*/
+      created() {
         this.getHomeMultidata();
         this.getHomeGoods("pop")
         this.getHomeGoods("new")
         this.getHomeGoods("sell")
+
     },
-      mounted() {
-          console.log()
-      },
+
 
       computed:{
           showGoods() {
@@ -80,6 +113,18 @@
       },
       methods: {
 
+          //获取tabcontrol的距离顶部高度
+          SwiperImageLoad(){
+              this.tabControl = this.$refs.tabcontrol2.$el.offsetTop
+          },
+
+          /*
+          * 加载更多
+          * */
+          loadMore() {
+              this.getHomeGoods(this.currentType)
+              this.$refs.scroll.finishPullUp()
+          },
           /*
           * 子组建传值
           * */
@@ -96,6 +141,9 @@
                       break
               }
               // console.log(index);
+              this.$refs.tabcontrol2.currentIndex = index
+              this.$refs.tabcontrol1.currentIndex = index
+
           },
           /*
           * 网络请求函数
@@ -111,16 +159,17 @@
               getHomeGoods(type,page).then(res=>{
                   this.goods[type].page+=1
                   this.goods[type].list.push(...res.data.list)
-                  this.$refs.scroll.finishPullUp()
+                  // this.$refs.scroll.finishPullUp()
               })
           },
           scroll(position) {
               // console.log(position);
               this.isShow = -(position.y) > 1000
+              this.tabControlShow = -(position.y) > this.tabControl
           },
-          loadMore() {
-              this.getHomeGoods(this.currentType)
-          }
+          // loadMore() {
+          //     this.getHomeGoods(this.currentType)
+          // }
       }
 }
 </script>
@@ -133,18 +182,13 @@
 
   .home-nav{
     background-color: var(--color-tint);
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 9;
+
   }
-  .tab-control{
-    position: sticky;
-    top: 44px;
-    box-shadow: 0 1px 1px rgba(100,100,100,.1);
-    z-index: 9;
-  }
+
+.tabControl{
+  position: relative;
+  z-index: 9;
+}
   .center{
     overflow: hidden;
 
